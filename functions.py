@@ -178,7 +178,3 @@ def rutas(asignacion_lv, n_vehiculos, capacidad_vehiculos, demanda, periodo, n_p
         rutas_lv.append(ruta_temp)                                        # agregamos la ruta completa a la lista de rutas
 
     return rutas_lv
-
-# COSAS POR CORRREGIR Y HACER PARA EL SABADO:
-# 2. Ajustar las funciones para periodos n >= 2
-# 3. Matriz de inventarios
