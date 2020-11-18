@@ -18,18 +18,23 @@ def read_data(n_clientes, n_productos, n_periodos, n_vehiculos_p, n_vehiculos_s,
     # lectura y obtencion de datos de los vehiculos de primer y segundo nivel
     hoja_vehiculos = datos['vehiculos']                                             # seleccionar la hoja vehiculos como hoja activa
     # Obtencion de las demandas de los vehiculos de primer nivel de la primera tabla en la hoja vehiculos segun la cantidad de vehiculos de primer nivel y periodos
-    capacidad_vehiculos_p = [[hoja_vehiculos.cell(row=i, column=j).value for j in range(2, 2+n_periodos)] for i in range(2, 2+n_vehiculos_p)]
+    capacidad_vehiculos_p = [[hoja_vehiculos.cell(row=i, column=j).value for j in range(2, 2+n_productos)] for i in range(2, 2+n_vehiculos_p)]
     # Obtencion de las demandas de los vehiculos de segundo nivel de la segunda tabla en la hoja vehiculos segun la cantidad de periodos, vehiculos de primer y segundo nivel
-    capacidad_vehiculos_s = [[hoja_vehiculos.cell(row=i, column=j).value for j in range(2, 2+n_periodos)] for i in range(3+n_vehiculos_p, 3+n_vehiculos_p+n_vehiculos_s)]
+    capacidad_vehiculos_s = [[hoja_vehiculos.cell(row=i, column=j).value for j in range(2, 2+n_productos)] for i in range(3+n_vehiculos_p, 3+n_vehiculos_p+n_vehiculos_s)]
 
     # lectura y obtencion de datos de las instalaciones de primer y segundo nivel
     hoja_instalaciones = datos['instalaciones']                                     # seleccionar la hoja instalaciones como hoja activa
     # Obtencion de las capacidades de los centros de primer nivel de la primera tabla en la hoja instalaciones segun la cantidad de centros regionales y periodos
-    capacidad_cr = [[hoja_instalaciones.cell(row=i, column=j).value for j in range(2, 2+n_periodos)] for i in range(3, 3+n_centrosregionales)]
+    capacidad_cr = [[hoja_instalaciones.cell(row=i, column=j).value for j in range(2, 2+n_productos)] for i in range(3, 3+n_centrosregionales)]
     # Obtencion de las capacidades de los centros de segundo nivel de la segunda tabla en la hoja instalaciones segun la cantidad de centros locales, centros regionales y periodos
-    capacidad_cl = [[hoja_instalaciones.cell(row=i, column=j).value for j in range(2, 2+n_periodos)] for i in range(5+n_centrosregionales, 5+n_centrosregionales+n_centroslocales)]
+    capacidad_cl = [[hoja_instalaciones.cell(row=i, column=j).value for j in range(2, 2+n_productos)] for i in range(5+n_centrosregionales, 5+n_centrosregionales+n_centroslocales)]
 
-    return np.array(demanda_clientes), np.array(capacidad_vehiculos_p), np.array(capacidad_vehiculos_s), np.array(capacidad_cr), np.array(capacidad_cl)
+    # lectura y obtencion de datos del costo de mantener inventario para el primer escalon
+    hoja_inventario = datos['inventario']
+    # Obtencion de los costos en la hoja seleccionada segun a cantidad de centros regionales y productos
+    costo_inventario = [[hoja_inventario.cell(row=i, column=j).value for j in range(2, 2+n_productos)] for i in range(2, 2+n_centrosregionales)]
+
+    return np.array(demanda_clientes), np.array(capacidad_vehiculos_p), np.array(capacidad_vehiculos_s), np.array(capacidad_cr), np.array(capacidad_cl), np.array(costo_inventario)
 
 
 # Funcion que binariza los valores que se pasen como parametro
@@ -80,7 +85,7 @@ def asignaciones(n_asignar, n_centros, periodo, n_productos, capacidad_centro, d
     intentos = 0                                                                # variable para el control de intentos de asignaciones
     rango = (periodo-1)*n_productos                                             # rango de indices para moverse a traves de la matriz de demanda
     copia_capacidad = np.copy(capacidad_centro)                                 # copia de la capacidad del centro para evitar modificaciones en las capacidades originales
-    if len(mapeo) > 0 and escalon == 2:
+    if (len(mapeo) > 0 and escalon == 2) or (len(mapeo) > 0 and escalon == 1):
         centro_temp = np.random.choice(mapeo)                                   # selecciona un centro habilitado previamente en otro periodo
     else:
         centro_temp = np.random.choice(centros)                                 # seleccion aleatoria del primer centro - habilitacion del primer centro
@@ -89,9 +94,14 @@ def asignaciones(n_asignar, n_centros, periodo, n_productos, capacidad_centro, d
         if intentos < 3:                                                        # si los intentos de asignacion son menores a 3
             asig_temp = np.random.choice(por_asignar)                           # selecciona un cliente o centro aleatorio para asignar
             # resta la capacidad del centro con la demanda del cliente o centro
-            resta_capacidad = copia_capacidad[centro_temp-1, :]-demanda[asig_temp-1, rango:rango+n_productos]
-            # actualiza la nueva capacidad del centro
-            copia_capacidad[centro_temp-1, :] = copia_capacidad[centro_temp-1, :]-demanda[asig_temp-1, rango:rango+n_productos]
+            if periodo > 1 and escalon == 1:
+                resta_capacidad = copia_capacidad[centro_temp - 1, :] - demanda[asig_temp - 1, 0:n_productos]
+                # actualiza la nueva capacidad del centro
+                copia_capacidad[centro_temp - 1, :] = copia_capacidad[centro_temp - 1, :] - demanda[asig_temp - 1, 0:n_productos]
+            else:
+                resta_capacidad = copia_capacidad[centro_temp-1, :]-demanda[asig_temp-1, rango:rango+n_productos]
+                # actualiza la nueva capacidad del centro
+                copia_capacidad[centro_temp-1, :] = copia_capacidad[centro_temp-1, :]-demanda[asig_temp-1, rango:rango+n_productos]
             binvec = np.array([binarize(x) for x in resta_capacidad])           # se binariza la resta de la capacidad
             if binvec.all():                                                    # si la resta en la capacidad para todos los productos da un valor positivo
                 idx_c = int(np.where(asignacion_lv[0, :] == asig_temp)[0])      # almacena el indice del centro
@@ -101,18 +111,21 @@ def asignaciones(n_asignar, n_centros, periodo, n_productos, capacidad_centro, d
             else:                                                               # en caso de que la resta de la capacidad resulte negativa para al menos 1 valor
                 intentos += 1                                                   # aumenta en 1 el numero de intentos
                 # reestablece la capacidad del centro al momento antes de la resta
-                copia_capacidad[centro_temp - 1, :] = copia_capacidad[centro_temp - 1, :] + demanda[asig_temp - 1, rango:rango + n_productos]
+                if periodo > 1 and escalon == 1:
+                    copia_capacidad[centro_temp - 1, :] = copia_capacidad[centro_temp - 1, :] + demanda[asig_temp - 1, 0:n_productos]
+                else:
+                    copia_capacidad[centro_temp - 1, :] = copia_capacidad[centro_temp - 1, :] + demanda[asig_temp - 1, rango:rango + n_productos]
         else:                                                                   # al llegar al numero maximo de intentos
-            if len(mapeo) > 1 and escalon == 2:
+            if (len(mapeo) > 1 and escalon == 2) or (len(mapeo) > 1 and escalon == 1):
                 idx_cl = np.where(mapeo == centro_temp)
                 mapeo = np.delete(mapeo, [idx_cl])
                 idx_m = np.where(centros == centro_temp)
                 centros = np.delete(centros, [idx_m])
                 centro_temp = np.random.choice(mapeo)
                 intentos = 0
-            elif len(mapeo) == 1 and escalon == 2:                              # si se usaron todos los centros y aun hay clientes por asignar
+            elif (len(mapeo) == 1 and escalon == 2) or (len(mapeo) == 1 and escalon == 1):                              # si se usaron todos los centros y aun hay clientes por asignar
                 idx_cl = np.where(mapeo == centro_temp)                         # seleccionamos el indice del centro que ya agoto su capacidad
-                centros = np.delete(centros, [idx_cl])
+                mapeo = np.delete(mapeo, [idx_cl])
                 centro_temp = np.random.choice(centros)                         # seleccionamos o habilitamos un nuevo centro que no se haya usado
                 intentos = 0                                                    # reiniciamos el numero de intentos
             else:
@@ -127,12 +140,12 @@ def asignaciones(n_asignar, n_centros, periodo, n_productos, capacidad_centro, d
         demandacentro = [centro]                                                # creamos un vector con el centro seleccionado
         suma = 0                                                                # inicializamos la suma de las demandas
         for asig in asignados:
-            suma += demanda[int(asig) - 1, rango:rango + n_productos]           # sumamos las demandas de cada cliente o centro que fue asignado a ese centro
+            if periodo > 1 and escalon == 1:
+                suma += demanda[int(asig) - 1, 0:n_productos]
+            else:
+                suma += demanda[int(asig) - 1, rango:rango + n_productos]       # sumamos las demandas de cada cliente o centro que fue asignado a ese centro
         demandacentro.append(suma)                                              # adjuntamos la demanda al vector que contiene las demandas del centro
         demandaf.append(demandacentro)                                          # adjuntamos las demandas del centro al vector que contiene las demandas de todos los centros
-    # las siguientes lineas de codigo funcionan como mapeo de las asignaciones para asignar realmente los centros habilitados en el escalon anterior y periodos anteriores
-    if len(mapeo) > 0 and escalon == 1:
-        asignacion_lv[escalon-1, :] = mapeo
 
     return asignacion_lv, demandaf
 
@@ -145,7 +158,7 @@ def asignaciones(n_asignar, n_centros, periodo, n_productos, capacidad_centro, d
 # n_productos: numero de productos
 # La funcion devuelve una lista de listas con el plan de rutas del periodo que se este trabajando
 
-def rutas(asignacion_lv, n_vehiculos, capacidad_vehiculos, demanda, periodo, n_productos):
+def rutas(asignacion_lv, n_vehiculos, capacidad_vehiculos, demanda, periodo, n_productos, escalon):
     rutas_lv = []                                                         # inicializacion del vector de vetores de rutas
     vehiculos = list(range(1, n_vehiculos+1))                             # creacion de una lista de vehiculos con los vehiculos existentes
     dicci_asignacion = dictionarize(asignacion_lv)                        # generacion de un diccionario con la matriz de asignacion-localizacion
@@ -157,7 +170,10 @@ def rutas(asignacion_lv, n_vehiculos, capacidad_vehiculos, demanda, periodo, n_p
         ruta_temp = [int(centro), vehiculo_temp, 0]                       # ingresamos el centro, el vehiculo e iniciamos ruta
         veh_cap = np.copy(capacidad_vehiculos_copy[vehiculo_temp-1, :])        # copiamos la capacidad del vehiculo para evitar modificar la capacidad orginal
         while idx_c < len(asignados):                                     # mientras no se hayan recorrido todos los asignados(cliente o centro segun corresponda)
-            dem_c = demanda[idx_c, rango:rango+n_productos]               # obtenemos la demanda del asignado
+            if periodo > 1 and escalon == 1:
+                dem_c = demanda[idx_c, 0:n_productos]                     # obtenemos la demanda del asignado
+            else:
+                dem_c = demanda[idx_c, rango:rango+n_productos]           # obtenemos la demanda del asignado
             resta = veh_cap - dem_c                                       # restamos la capacidad del vehiculo con la demanda del asignado
             binvec = np.array([binarize(x) for x in resta])               # binarizamos la resta
             if binvec.all():                                              # si la resta es positiva para cada producto
@@ -174,11 +190,69 @@ def rutas(asignacion_lv, n_vehiculos, capacidad_vehiculos, demanda, periodo, n_p
                     vehiculo_temp = np.random.choice(vehiculos)           # seleccionamos un nuevo vehiculo aleatorio
                     veh_cap = capacidad_vehiculos_copy[vehiculo_temp - 1, :]   # obtenemos la capacidad del nuevo vehiculo
                     ruta_temp += [vehiculo_temp, 0]                       # agregamos el vehiculo al plan de rutas e iniciamos una nuvea ruta
+        vehiculos.pop(vehiculos.index(vehiculo_temp))
         ruta_temp.append(0)                                               # finalizamos ruta
         rutas_lv.append(ruta_temp)                                        # agregamos la ruta completa a la lista de rutas
 
     return rutas_lv
 
-# COSAS POR CORRREGIR Y HACER PARA EL SABADO:
-# 2. Ajustar las funciones para periodos n >= 2
-# 3. Matriz de inventarios
+# Funcion para la generacion de un individuo completo
+# se recibe como parametros
+# n_clientes : numero de clientes
+# n_centros_locales: numero de centros locales
+# n_centros_regionales: numero de centros regionales
+# n_periodos: numero de periodos
+# n_productos: nuymero de productos
+# n_vehiculos_s: numero de vehiculos de segundo escalon
+# n_vehiculos_p: numero de vehiculos de primer escalon
+# capacidad_cl: matriz con las capacidades de los centros locales por producto
+# capacidad_cr: matriz con las capacidades de los centros regionales por producto
+# capacidad_vehiculos_p: matriz de capacidad de carga de los vehiculos de primer escalon por producto
+# capacidad_vehiculos_s: matriz de capacidad de carga de los vehiculos de segundo escalon por producto
+# demanda_cl: matriz de demanda de los clientes por producto y periodo
+# La funcion devuelve o retorna:
+# asignaciones_primer_lv: matriz de asignaciones de primer escalon
+# asignaciones_segundo_lv: matriz de asignaciones de segundo escalon
+# rutas_primer_lv: lista de listas con las rutas de primer escalon
+# rutas_segundo_lv: lista de listas con las rutas de segundo escalon
+# demanda_cr_full: lista de diccionarios con las demandas de cada centro regional por producto, cada elemento de la lista corresponde a un periodo
+
+
+def individuo(n_clientes, n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_s, n_vehiculos_p, capacidad_cl, capacidad_cr, capacidad_vehiculos_p, capacidad_vehiculos_s, demanda_clientes):
+
+    asignaciones_segundo_lv = []
+    rutas_segundo_lv = []
+    asignaciones_primer_lv = []
+    rutas_primer_lv = []
+    cl_habs = []
+    cr_habs = []
+    demanda_cr_full = []
+
+    for perioactual in range(1, n_periodos + 1):
+        dicti = {}
+        # llamada a la funcion de asignacion para la asignacion-localizacion del segundo escalon
+        asignacion_segundo_nivel, demanda_cl = asignaciones(n_clientes, n_centroslocales, perioactual, n_productos, capacidad_cl, demanda_clientes, cl_habs, 2)
+        # variables de mapeo de los centros locales habilitados en el segundo escalon
+        n_cl_habs, demanda_cl_np, cl_habs = maping(demanda_cl)
+        # llamada a la funcion de rutas para la creacion del plan de rutas del segundo escalon
+        rutas_segundo_nivel = rutas(asignacion_segundo_nivel, n_vehiculos_s, capacidad_vehiculos_s, demanda_clientes, perioactual, n_productos, 2)
+        # llamada a la funcion de asignacion para la asignacion-localizacion del primer escalon
+        asignacion_primer_nivel, demanda_cr = asignaciones(n_cl_habs, n_centrosregionales, perioactual, n_productos, capacidad_cr, demanda_cl_np, cr_habs, 1)
+        asignacion_primer_nivel[0, :] = cl_habs
+        # variables de mapeo de los centros locales habilitados en el primer escalon
+        n_cr_habs, demanda_cr_np, cr_habs = maping(demanda_cr)
+        # llamada a la funcion de rutas para la creacion del plan de rutas del primer escalon
+        rutas_primer_nivel = rutas(asignacion_primer_nivel, n_vehiculos_p, capacidad_vehiculos_p, demanda_cl_np, perioactual, n_productos, 1)
+        asignaciones_segundo_lv.append(asignacion_segundo_nivel)
+        rutas_segundo_lv = rutas_segundo_lv + rutas_segundo_nivel
+        asignaciones_primer_lv.append(asignacion_primer_nivel)
+        rutas_primer_lv = rutas_primer_lv + rutas_primer_nivel
+        for cr in demanda_cr:
+            if cr[0] not in dicti.keys():
+                dicti[cr[0]] = cr[1]
+        demanda_cr_full.append(dicti)
+
+    return asignaciones_primer_lv, asignaciones_segundo_lv, rutas_primer_lv, rutas_segundo_lv, demanda_cr_full
+
+    #def inventario(demandas_cr_full, n_periodos, n_productos, n_centrosregionales):
+        #return valoresQ, valoresI
