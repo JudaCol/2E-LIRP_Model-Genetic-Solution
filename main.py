@@ -1,5 +1,6 @@
 from functions import *
 
+
 # parametros de entrada iniciales
 n_clientes = 7  # numero de clientes
 n_productos = 3  # numero de productos
@@ -8,21 +9,41 @@ n_vehiculos_p = 6  # numero de vehiculos de primer nivel
 n_vehiculos_s = 9  # numero de vehiculos de segundo nivel
 n_centrosregionales = 4  # numero de centros regionales
 n_centroslocales = 7  # numero de centros locales
-periodoinicial = 1  # periodo inicial - arreglar esto
+n_poblacion = 100  # numero de inidividuos a generar
+individuos = []
+demandas = []
+final_inventarioQ = []
+final_inventarioI = []
+valores_f1 = []
+valores_f2 = []
+valores_ft = []
+w1 = 1
+w2 = 1
+
 
 # obtencion de las demandas y capacidades dadas en matrices en un archivo de excel
-demanda_clientes, capacidad_vehiculos_p, capacidad_vehiculos_s, capacidad_cr, capacidad_cl = read_data(n_clientes, n_productos, n_periodos, n_vehiculos_p, n_vehiculos_s, n_centrosregionales, n_centroslocales)
-cl_habs = []
+demanda_clientes, capacidad_vehiculos_p, capacidad_vehiculos_s, capacidad_cr, capacidad_cl, inventario, costo_inventario, costo_instalaciones_cr, costo_instalaciones_cl, costo_vehiculos_p, costo_vehiculos_s, costo_compraproductos, costo_transporte, costo_rutas_p, costo_rutas_s, costo_humano = read_data(n_clientes, n_productos, n_periodos, n_vehiculos_p, n_vehiculos_s, n_centrosregionales, n_centroslocales)
 
-for perioactual in range(1, n_periodos+1):
-
-    # llamada a la funcion de asignacion para la asignacion-localizacion del segundo escalon
-    asignacion_segundo_nivel, demanda_cl = asignaciones(n_clientes, n_centroslocales, periodoinicial, n_productos, capacidad_cl, demanda_clientes, cl_habs, 2)
-    # variables de mapeo de los centros locales habilitados en el segundo escalon
-    n_cl_habs, demanda_cl_np, cl_habs = maping(demanda_cl)
-    # llamada a la funcion de rutas para la creacion del plan de rutas del segundo escalon
-    rutas_segundo_nivel = rutas(asignacion_segundo_nivel, n_vehiculos_s, capacidad_vehiculos_s, demanda_clientes, periodoinicial, n_productos)
-    # llamada a la funcion de asignacion para la asignacion-localizacion del primer escalon
-    asignacion_primer_nivel, demanda_cr = asignaciones(n_cl_habs, n_centrosregionales, periodoinicial, n_productos, capacidad_cr, demanda_cl_np, cl_habs, 1)
-    # llamada a la funcion de rutas para la creacion del plan de rutas del primer escalon
-    rutas_primer_nivel = rutas(asignacion_primer_nivel, n_vehiculos_p, capacidad_vehiculos_p, demanda_cl_np, periodoinicial, n_productos)
+# generacion de la poblacion inicial
+for i in range(n_poblacion):
+    # Generacion de un individuo
+    asignaciones_primer_lv, asignaciones_segundo_lv, rutas_primer_lv, rutas_segundo_lv, demandas_cr_full = individuo(n_clientes, n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_s, n_vehiculos_p, capacidad_cl, capacidad_cr, capacidad_vehiculos_p, capacidad_vehiculos_s, demanda_clientes)
+    # almacenamiento del individuo en una lista
+    individuos.append([asignaciones_primer_lv, rutas_primer_lv, asignaciones_segundo_lv, rutas_segundo_lv])
+    # almacenamiento de las demandas en una lista
+    demandas.append(demandas_cr_full)
+    # Generacion de una matriz de demandas para el manejo de inventarios
+    valoresQ, valoresI = fun_inventario(demandas_cr_full, n_periodos, n_productos, n_centrosregionales, capacidad_cr, inventario)
+    final_inventarioQ.append(valoresQ)
+    final_inventarioI.append(valoresI)
+    # costos f1
+    cost_loc_cl, cost_loc_cr, costprod, costtrans, costinv, costrut2, costrut1, costveh2, costveh1 = fitness_f1(n_periodos, n_productos, asignaciones_segundo_lv, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, valoresQ, valoresI, rutas_segundo_lv, rutas_primer_lv, costo_rutas_s, costo_rutas_p, n_centroslocales, n_centrosregionales, costo_vehiculos_s, costo_vehiculos_p)
+    costo_f1 = np.sum([cost_loc_cl, cost_loc_cr, costprod, costtrans, costinv, costrut2, costrut1, costveh2, costveh1])
+    valores_f1.append(costo_f1)
+    # costos f2
+    cost_sufr_hum = fitness_f2(rutas_segundo_lv, n_periodos, costo_humano, n_centroslocales)
+    costo_f2 = -cost_sufr_hum
+    valores_f2.append(costo_f2)
+    # costo total del fitness
+    costo_total = (w1*costo_f1) + (w2*costo_f2)
+    valores_ft.append(costo_total)
