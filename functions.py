@@ -27,7 +27,7 @@ def read_data(n_clientes, n_productos, n_periodos, n_vehiculos_p, n_vehiculos_s,
     total_columnas = n_productos*n_periodos
 
     # lectura y obtencion de datos de los clientes
-    datos = px.load_workbook('datos4.xlsx')                                          # carga de la hoja de excel de datos
+    datos = px.load_workbook('datos.xlsx')                                          # carga de la hoja de excel de datos
     hoja_clientes = datos['clientes']                                               # seleccionar la hoja clientes como hoja activa
     # Obtencion de las demandas de la tabla de la hoja clientes segun la cantidad de clientes, productos y periodos
     demanda_clientes = [[hoja_clientes.cell(row=i, column=j).value for j in range(2, 2+total_columnas)] for i in range(3, 3+n_clientes)]

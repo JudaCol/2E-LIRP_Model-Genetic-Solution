@@ -4,17 +4,17 @@ from operators_ga import *
 from tqdm import tqdm
 
 # parametros de entrada iniciales
-n_clientes = 500  # numero de clientes
-n_productos = 10  # numero de productos
-n_periodos = 6  # numero de periodos
-n_vehiculos_p = 40  # numero de vehiculos de primer nivel
-n_vehiculos_s = 50  # numero de vehiculos de segundo nivel
-n_centrosregionales = 30  # numero de centros regionales
-n_centroslocales = 40  # numero de centros locales
+n_clientes = 7  # numero de clientes
+n_productos = 3  # numero de productos
+n_periodos = 3  # numero de periodos
+n_vehiculos_p = 6  # numero de vehiculos de primer nivel
+n_vehiculos_s = 9  # numero de vehiculos de segundo nivel
+n_centrosregionales = 4  # numero de centros regionales
+n_centroslocales = 7  # numero de centros locales
 n_poblacion = 100  # numero de inidividuos a generar
 individuos = []
 demand_cr_poblation = []
-demandas_cl_full = []
+demand_cl_poblation = []
 final_inventarioQ = []
 final_inventarioI = []
 valores_f1 = []
@@ -37,7 +37,7 @@ for i in range(n_poblacion):
     # almacenamiento de las demandas de centros regionales en una lista
     demand_cr_poblation.append(demandas_cr_full)
     # almacenamiento de las demandas de centros locales en una lista
-    demandas_cl_full.append(demandas_cl)
+    demand_cl_poblation.append(demandas_cl)
     # Generacion de los valores Q e I de la gestion de inventarios
     valoresQ, valoresI = fun_inventario(demandas_cr_full, n_periodos, n_productos, n_centrosregionales, capacidad_cr, inventario)
     final_inventarioQ.append(valoresQ)
@@ -58,7 +58,6 @@ for i in range(n_poblacion):
     costo_total = (w1*costo_f1) + (w2*costo_f2)
     valores_ft.append(costo_total)
 
-demand_cl_poblation = np.copy(demandas_cl_full)
 # Operadores geneticos para n_generacion
 bob_ind = []
 bob_cr_dem = []
