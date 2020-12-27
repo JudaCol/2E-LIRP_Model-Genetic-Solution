@@ -52,7 +52,7 @@ def rutas2(asignacion_lv, n_vehiculos, capacidad_vehiculos, demanda, periodo, n_
                             mapeo.pop(mapeo.index(vehiculo_temp))
                             vehiculos.pop(vehiculos.index(vehiculo_temp))
                             vehiculo_temp = np.random.choice(mapeo)
-                        elif len(mapeo) ==1:
+                        elif len(mapeo) == 1:
                             mapeo.pop(mapeo.index(vehiculo_temp))
                             vehiculos.pop(vehiculos.index(vehiculo_temp))
                             vehiculo_temp = np.random.choice(vehiculos)
@@ -217,7 +217,7 @@ def crossover(individuos, n_clientes, n_centroslocales, n_centrosregionales, n_p
                 idx_p1 = np.random.choice(padres)
         # parametros iniciales de cada padre
         padre1 = individuos[idx_p1]
-        demandas_cl_cross_seg2 = demandas_cl_cross[idx_p1]  # demandas padre 1
+        # demandas_cl_cross_seg2 = demandas_cl_cross[idx_p1]  # demandas padre 1
         acepted = 0
         idx_p2 = np.random.choice(padres)
         while acepted != 1:
@@ -242,7 +242,7 @@ def crossover(individuos, n_clientes, n_centroslocales, n_centrosregionales, n_p
         # elementos que se heredan al hijo 1 del padre 2 y padre 1
         seg2_cr_habs_h2 = extract_c(padre2, n_periodos, 1)  # centros regionales habilitados en el primer escalon del padre 2
         vh1_habs_h2 = extract_vh(padre2, n_periodos, 1)  # vehiculos de primer lvl habilitados en los 3 periodos del padre 2
-        # seg2_cl_habs_h2 = extract_c(padre2, n_periodos, 0)  # centros locales habilitados en el primer escalon del padre 2
+        seg2_cl_habs_h2 = extract_c(padre2, n_periodos, 0)  # centros locales habilitados en el primer escalon del padre 2
         vh2_habs_h2 = extract_vh(padre1, n_periodos, 3)   # vehiculos de segundo lvl habilitados en los 3 periodos del padre 1
         # pacializacion, reconstruccion y consolidacion del hijo 2
         hijo2, rec_seg2_demand_cr_full_h2, rec_seg1_demand_cl_full_h2, hijo2_I, hijo2_Q, hijo2_fitness_total = reconstruction_2(n_clientes, n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_s, n_vehiculos_p, capacidad_cl, capacidad_cr, capacidad_vehiculos_p, capacidad_vehiculos_s, demanda_clientes, demandas_cl_cross_seg1, vh1_habs_h2, seg2_cr_habs_h2, vh2_habs_h2, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2)
@@ -261,11 +261,11 @@ def crossover(individuos, n_clientes, n_centroslocales, n_centrosregionales, n_p
     for p_cross in crossed:
         p_crossed.append(individuos[p_cross])
 
-    return p_crossed, hijos, demand_cr_hijos, demand_cl_hijos, Q_hijos, I_hijos, fit_hijos
+    return p_crossed, crossed, hijos, demand_cr_hijos, demand_cl_hijos, Q_hijos, I_hijos, fit_hijos
 
 
-def mutation(hijos, demandas_hijos, n_centrosregionales, capacidad_cr, n_periodos, n_productos, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, n_centroslocales, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2, Q_hijos, I_hijos, fit_hijos):
-    prob_mut = 0.1
+def mutation(hijos, demandas_hijos, n_centrosregionales, capacidad_cr, n_periodos, n_productos, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, n_centroslocales, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2, Q_hijos, I_hijos, fit_hijos, prob_mut):
+    # prob_mut = 0.1
     h_muts = int(len(hijos) * prob_mut)
     idx_hijos = np.array(range(len(hijos)))
     muted = []
@@ -371,7 +371,7 @@ def mutation(hijos, demandas_hijos, n_centrosregionales, capacidad_cr, n_periodo
             hijo_copy[0] = asig_primer_lvl
             hijo_copy[1] = rutas_primer_lvl
             hijos[idx_hijo_copy] = hijo_copy
-            demandas_hijos[idx_hijo_copy] = demand_hijo_copy
+            demandas_hijos[idx_hijo_copy] = demand_hijo_copy.tolist()
             Q_hijos[idx_hijo_copy] = valoresQ
             I_hijos[idx_hijo_copy] = valoresI
             fit_hijos[idx_hijo_copy] = costo_total

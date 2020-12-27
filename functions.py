@@ -253,7 +253,7 @@ def rutas(asignacion_lv, n_vehiculos, capacidad_vehiculos, demanda, periodo, n_p
             binvec = np.array([binarize(x) for x in resta])               # binarizamos la resta
             if binvec.all():                                              # si la resta es positiva para cada producto
                 ruta_temp.append(asignados[idx_c])                        # agregue a la ruta el centro accediendo al indice del mapeo que le corresponde
-                veh_cap -= dem_c                                          # restamos la capacidad del vehiculo
+                veh_cap = veh_cap - dem_c                                          # restamos la capacidad del vehiculo
                 idx_c += 1                                                # aumentamos el indice
             else:                                                         # al agotar la capacidad del vehiculo
                 if len(ruta_temp) != 0:
