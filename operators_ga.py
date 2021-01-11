@@ -146,8 +146,10 @@ def reconstruction_1(n_centroslocales, n_centrosregionales, n_periodos, n_produc
     cost_sufr_hum = round(fitness_f2(seg1_rutas, n_periodos, costo_humano, n_centroslocales), 3)
     hijo1_costo_f2 = -cost_sufr_hum
     # costo total del fitness del hijo 1
-    hijo1_fitness_total = round((w1 * hijo1_costo_f1) + (w2 * hijo1_costo_f2), 3)
-    return hijo1, rec_seg2_demand_cr_full, rec_seg2_demand_cl_full, hijo1_I, hijo1_Q, hijo1_fitness_total
+    hijo1_f1 = w1 * hijo1_costo_f1
+    hijo1_f2 = w2 * hijo1_costo_f2
+    hijo1_fitness_total = round(hijo1_f1 + hijo1_f2, 3)
+    return hijo1, rec_seg2_demand_cr_full, rec_seg2_demand_cl_full, hijo1_I, hijo1_Q, hijo1_f1, hijo1_f2, hijo1_fitness_total
 
 
 def reconstruction_2(n_clientes, n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_s, n_vehiculos_p, capacidad_cl, capacidad_cr, capacidad_vehiculos_p, capacidad_vehiculos_s, demanda_clientes, demandas_cl_cross_seg1, vh1_habs_h2, seg2_cr_habs_h2, vh2_habs_h2, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2):
@@ -188,10 +190,12 @@ def reconstruction_2(n_clientes, n_centroslocales, n_centrosregionales, n_period
     # costos f2
     cost_sufr_hum = round(fitness_f2(rec_seg1_rutas_h2, n_periodos, costo_humano, n_centroslocales), 3)
     hijo2_costo_f2 = -cost_sufr_hum
-    # costo total del fitness del hijo 1
-    hijo2_fitness_total = round((w1 * hijo2_costo_f1) + (w2 * hijo2_costo_f2), 3)
+    # costo total del fitness del hijo 2
+    hijo2_f1 = w1 * hijo2_costo_f1
+    hijo2_f2 = w2 * hijo2_costo_f2
+    hijo2_fitness_total = round(hijo2_f1 + hijo2_f2, 3)
 
-    return hijo2, rec_seg2_demand_cr_full_h2, rec_seg1_demand_cl_full_h2, hijo2_I, hijo2_Q, hijo2_fitness_total
+    return hijo2, rec_seg2_demand_cr_full_h2, rec_seg1_demand_cl_full_h2, hijo2_I, hijo2_Q, hijo2_f1, hijo2_f2, hijo2_fitness_total
 
 
 def crossover(individuos, n_clientes, n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_s, n_vehiculos_p, capacidad_cr, capacidad_cl, capacidad_vehiculos_p, capacidad_vehiculos_s, demanda_clientes, demandas_cl_cross, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2):
@@ -202,6 +206,8 @@ def crossover(individuos, n_clientes, n_centroslocales, n_centrosregionales, n_p
     demand_cl_hijos = []
     I_hijos = []
     Q_hijos = []
+    f1_hijos = []
+    f2_hijos = []
     fit_hijos = []
     p_crossed = []
     for _ in range(int(len(individuos)/2)):
@@ -236,16 +242,16 @@ def crossover(individuos, n_clientes, n_centroslocales, n_centrosregionales, n_p
         seg2_cr_habs_h1 = extract_c(padre1, n_periodos, 1)  # centros regionales habilitados en el primer escalon del padre 1
         seg2_vh1_habs = extract_vh(padre1, n_periodos, 1)  # vehiculos de primer lvl habilitados en los 3 periodos
         # parcializacion, reconstruccion y consolidacion del hijo 1
-        hijo1, rec_demand_cr_full_h1, rec_seg2_demand_cl_full, hijo1_I, hijo1_Q, hijo1_fitness_total = reconstruction_1(n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_p, capacidad_cr, capacidad_vehiculos_p, demandas_cl_cross_seg1, seg2_cr_habs_h1, seg2_vh1_habs, inventario, seg1_escalon, seg1_rutas, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2)
+        hijo1, rec_demand_cr_full_h1, rec_seg2_demand_cl_full, hijo1_I, hijo1_Q, hijo1_f1, hijo1_f2, hijo1_fitness_total = reconstruction_1(n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_p, capacidad_cr, capacidad_vehiculos_p, demandas_cl_cross_seg1, seg2_cr_habs_h1, seg2_vh1_habs, inventario, seg1_escalon, seg1_rutas, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2)
         # elementos que se heredan al hijo 1 del padre 2 y padre 1
         # en el hijo 2 se parcializa el segmento 1
         # elementos que se heredan al hijo 1 del padre 2 y padre 1
         seg2_cr_habs_h2 = extract_c(padre2, n_periodos, 1)  # centros regionales habilitados en el primer escalon del padre 2
         vh1_habs_h2 = extract_vh(padre2, n_periodos, 1)  # vehiculos de primer lvl habilitados en los 3 periodos del padre 2
-        seg2_cl_habs_h2 = extract_c(padre2, n_periodos, 0)  # centros locales habilitados en el primer escalon del padre 2
+        # seg2_cl_habs_h2 = extract_c(padre2, n_periodos, 0)  # centros locales habilitados en el primer escalon del padre 2
         vh2_habs_h2 = extract_vh(padre1, n_periodos, 3)   # vehiculos de segundo lvl habilitados en los 3 periodos del padre 1
         # pacializacion, reconstruccion y consolidacion del hijo 2
-        hijo2, rec_seg2_demand_cr_full_h2, rec_seg1_demand_cl_full_h2, hijo2_I, hijo2_Q, hijo2_fitness_total = reconstruction_2(n_clientes, n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_s, n_vehiculos_p, capacidad_cl, capacidad_cr, capacidad_vehiculos_p, capacidad_vehiculos_s, demanda_clientes, demandas_cl_cross_seg1, vh1_habs_h2, seg2_cr_habs_h2, vh2_habs_h2, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2)
+        hijo2, rec_seg2_demand_cr_full_h2, rec_seg1_demand_cl_full_h2, hijo2_I, hijo2_Q, hijo2_f1, hijo2_f2, hijo2_fitness_total = reconstruction_2(n_clientes, n_centroslocales, n_centrosregionales, n_periodos, n_productos, n_vehiculos_s, n_vehiculos_p, capacidad_cl, capacidad_cr, capacidad_vehiculos_p, capacidad_vehiculos_s, demanda_clientes, demandas_cl_cross_seg1, vh1_habs_h2, seg2_cr_habs_h2, vh2_habs_h2, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2)
         hijos.append(hijo1)
         hijos.append(hijo2)
         demand_cr_hijos.append(rec_demand_cr_full_h1)
@@ -256,15 +262,19 @@ def crossover(individuos, n_clientes, n_centroslocales, n_centrosregionales, n_p
         I_hijos.append(hijo2_I)
         Q_hijos.append(hijo1_Q)
         Q_hijos.append(hijo2_Q)
+        f1_hijos.append(hijo1_f1)
+        f1_hijos.append(hijo2_f1)
+        f2_hijos.append(hijo1_f2)
+        f2_hijos.append(hijo2_f2)
         fit_hijos.append(hijo1_fitness_total)
         fit_hijos.append(hijo2_fitness_total)
     for p_cross in crossed:
         p_crossed.append(individuos[p_cross])
 
-    return p_crossed, crossed, hijos, demand_cr_hijos, demand_cl_hijos, Q_hijos, I_hijos, fit_hijos
+    return p_crossed, crossed, hijos, demand_cr_hijos, demand_cl_hijos, Q_hijos, I_hijos, f1_hijos, f2_hijos, fit_hijos
 
 
-def mutation(hijos, demandas_hijos, n_centrosregionales, capacidad_cr, n_periodos, n_productos, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, n_centroslocales, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2, Q_hijos, I_hijos, fit_hijos, prob_mut):
+def mutation(hijos, demandas_hijos, n_centrosregionales, capacidad_cr, n_periodos, n_productos, inventario, costo_instalaciones_cl, costo_instalaciones_cr, costo_compraproductos, costo_transporte, costo_inventario, costo_rutas_s, costo_rutas_p, n_centroslocales, costo_vehiculos_s, costo_vehiculos_p, costo_humano, w1, w2, Q_hijos, I_hijos, f1_hijos, f2_hijos, fit_hijos, prob_mut):
     # prob_mut = 0.1
     h_muts = int(len(hijos) * prob_mut)
     idx_hijos = np.array(range(len(hijos)))
@@ -367,13 +377,17 @@ def mutation(hijos, demandas_hijos, n_centrosregionales, capacidad_cr, n_periodo
             cost_sufr_hum = fitness_f2(hijo_copy[3], n_periodos, costo_humano, n_centroslocales)
             costo_f2 = -cost_sufr_hum
             # costo total del fitness
-            costo_total = (w1 * costo_f1) + (w2 * costo_f2)
+            hijo_f1 = w1 * costo_f1
+            hijo_f2 = w2 * costo_f2
+            costo_total = round(hijo_f1 + hijo_f2, 3)
             hijo_copy[0] = asig_primer_lvl
             hijo_copy[1] = rutas_primer_lvl
             hijos[idx_hijo_copy] = hijo_copy
             demandas_hijos[idx_hijo_copy] = demand_hijo_copy.tolist()
             Q_hijos[idx_hijo_copy] = valoresQ
             I_hijos[idx_hijo_copy] = valoresI
+            f1_hijos[idx_hijo_copy] = hijo_f1
+            f2_hijos[idx_hijo_copy] = hijo_f2
             fit_hijos[idx_hijo_copy] = costo_total
 
         else:
@@ -381,4 +395,4 @@ def mutation(hijos, demandas_hijos, n_centrosregionales, capacidad_cr, n_periodo
             # print("no se pudo")
             # return hijos, demandas_hijos, Q_hijos, I_hijos, fit_hijos
 
-    return hijos, demandas_hijos, Q_hijos, I_hijos, fit_hijos
+    return hijos, demandas_hijos, Q_hijos, I_hijos, f1_hijos, f2_hijos, fit_hijos

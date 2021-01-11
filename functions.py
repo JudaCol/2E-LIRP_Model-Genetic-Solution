@@ -1,5 +1,4 @@
 import numpy as np
-# import matplotlib.pyplot as plt
 import openpyxl as px
 from itertools import groupby
 
@@ -27,7 +26,7 @@ def read_data(n_clientes, n_productos, n_periodos, n_vehiculos_p, n_vehiculos_s,
     total_columnas = n_productos*n_periodos
 
     # lectura y obtencion de datos de los clientes
-    datos = px.load_workbook('datos.xlsx')                                          # carga de la hoja de excel de datos
+    datos = px.load_workbook('datos5.xlsx')                                          # carga de la hoja de excel de datos
     hoja_clientes = datos['clientes']                                               # seleccionar la hoja clientes como hoja activa
     # Obtencion de las demandas de la tabla de la hoja clientes segun la cantidad de clientes, productos y periodos
     demanda_clientes = [[hoja_clientes.cell(row=i, column=j).value for j in range(2, 2+total_columnas)] for i in range(3, 3+n_clientes)]
@@ -515,7 +514,7 @@ def fitness_f1(n_periodos, n_productos, asignaciones_segundo_lv, costo_instalaci
         for pr in range(n_productos):
             for t in range(n_periodos):
                 costprod += matrizQp[t][pr] * costo_compraproductos[pr, t]
-                costtrans += matrizQp[t][pr] * costo_transporte[cr - 1, (n_periodos * t) + pr]
+                costtrans += matrizQp[t][pr] * costo_transporte[cr - 1, (n_productos * t) + pr]
                 costinv += matrizIp[t][pr] * costo_inventario[cr - 1, pr]
 
     return cost_loc_cl, cost_loc_cr, costprod, costtrans, costinv, costrut2, costrut1, costveh2, costveh1
@@ -580,6 +579,4 @@ def selection(poblacion, fitness):
             ind_rejec.append(rand_1)
     return ind_selec
 
-# documentar inventarios, lineas adicionales y fitness
-# realizar operadores geneticos
 
